@@ -48,6 +48,11 @@ function sendView() {
     });
 } 
 
+function logout() {
+  localStorage.removeItem('username');
+  window.location.href = '/';
+}
+
 function sendMessage() {
     var message = $('#message-input').val();
     $('#message-input').val('');
