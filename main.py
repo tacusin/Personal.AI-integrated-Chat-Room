@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import time
 import os
+
 domainname = os.environ['DOMAIN_NAME']
 apikey = os.environ['API_KEY']
 
@@ -33,7 +34,11 @@ def send_to_webhook(username, message, url):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('login.html')
+
+@app.route('/chat')
+def chat():
+    return render_template('chat.html')
 
 @app.route('/get_chat_history', methods=['GET'])
 def get_chat_history():
@@ -46,8 +51,10 @@ def get_connected_users():
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
-    username = request.form['username']
-    message = request.form['message']
+    data = request.get_json()
+    username = data.get('username')
+    message = data.get('message')
+  
 
     if not username or not message:
         return 'Both username and message are required.', 400
@@ -62,14 +69,12 @@ def send_message():
 
 @app.route('/prompt_chatbot', methods=['POST'])
 def prompt_chatbot():
-    username = request.form['username']
-    message = request.form['message']
-
-    if not username or not message:
-        return 'Both username and message are required.', 400
-
-    chat_history.append({'sender': username, 'message': message})
-    connected_users[username] = time.time()
+    data = request.get_json()
+    username = data.get('username')
+    message = data.get('message')
+  
+    if not username:
+        return 'Username is required.', 400
 
     primary_webhook_url = 'https://api.personal.ai/v1/message'  # Replace with your primary webhook URL
     response = requests.post(primary_webhook_url, json={
@@ -94,4 +99,3 @@ def prompt_chatbot():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
- 
