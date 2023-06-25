@@ -2,26 +2,26 @@
 <html>
 <head>
     <title>Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/emojionearea@3.4.2/dist/emojionearea.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="static/styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/emojionearea@3.4.2/dist/emojionearea.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/emojionearea@3.4.2/dist/emojionearea.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="static/styles.css"> <!-- linking the CSS file -->
-    <script src="static/scripts.js"></script> <!-- linking the JS file -->
+    <script src="static/scripts.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
     <div id="chat-room">
-        <h1>Chat Room<font size="1"> *having issues with Firefox browsers</font></h1>
+        <h1>Chat Room</h1>
         <div id="scroll-window">
             <div id="chat-history"></div>
         </div>
         <div id="user-controls">
             <div id="connected-users" onclick="toggleUserList()">Connected Users</div>
             <div id="user-list"></div>
-            <input type="text" id="username-input" placeholder="Username">
             <textarea id="message-input" placeholder="Type your message"></textarea>
             <button onclick="sendMessage()">Send Message</button>
             <button onclick="promptChatbot()">Prompt Chatbot AI</button>
+            <button onclick="logout()">Logout</button>
         </div>
     </div>
 </body>
