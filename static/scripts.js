@@ -41,6 +41,9 @@ function updateConnectedUsers() {
 
 function sendMessage() {
     var message = $('#message-input').val();
+    $('#message-input').val('');
+    var emojioneArea = $("#message-input").data("emojioneArea");
+    emojioneArea.setText('');
     if (!message) return;  // prevent empty messages
     $.ajax({
         url: '/send_message',
@@ -51,15 +54,15 @@ function sendMessage() {
         }),
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
-        async: false,
-        success: function() {
-            $('#message-input').val('');
-        }
+        async: false
     });
 }
 
 function promptChatbot() {
     var message = $('#message-input').val();
+    $('#message-input').val('');
+    var emojioneArea = $("#message-input").data("emojioneArea");
+    emojioneArea.setText('');
     if (!message) return;  // prevent empty messages
     $.ajax({
         url: '/prompt_chatbot',
@@ -69,10 +72,7 @@ function promptChatbot() {
             'message': message
         }),
         contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        success: function() {
-            $('#message-input').val('');
-         } 
+        dataType: 'json'
     });
 }
 
@@ -100,7 +100,6 @@ $(document).ready(function() {
                 keyup: function(editor, event) {
                     if (event.keyCode == 13 && !event.shiftKey) {
                         sendMessage();
-                        this.setText('');
                     }
                 }
             }
