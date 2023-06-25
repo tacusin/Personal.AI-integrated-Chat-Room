@@ -48,10 +48,11 @@ function updateConnectedUsers() {
         type: 'GET',
         success: function(data) {
             $('#connected-users').empty();
-            $('#connected-users').append('<strong>Connected users:</strong> ' + data.length);
+            $('#connected-users').append('<strong>Connected Users:</strong> ' + data.length);
             $('#user-list').empty();
+            $('#user-list').append('<div id="connected-users" onclick="toggleUserList()">Connected Users</div>');
             data.forEach(function(user) {
-                $('#user-list').append('<p>' + user + '</p>');
+                $('#user-list').append('<p>• ' + user + '</p>');
             });
         }
     });
@@ -75,7 +76,10 @@ function sendMessage() {
     var message = $('#message-input').val();
     $('#message-input').val('');
     var emojioneArea = $("#message-input").data("emojioneArea");
-    emojioneArea.setText('');
+    if (!message && emojioneArea.getText().trim() !== '') {
+      message = emojioneArea.getText().trim();
+      emojioneArea.setText('');
+    }
     if (!message) return;  // prevent empty messages
     $.ajax({
         url: '/send_message',
@@ -94,8 +98,11 @@ function promptChatbot() {
     var message = $('#message-input').val();
     $('#message-input').val('');
     var emojioneArea = $("#message-input").data("emojioneArea");
-    emojioneArea.setText('');
-    if (!message) return;  // prevent empty messages
+    if (!message && emojioneArea.getText().trim() !== '') {
+      message = emojioneArea.getText().trim();
+      emojioneArea.setText('');
+    }
+    if (!message) return; // prevent empty messages
     $.ajax({
         url: '/prompt_chatbot',
         type: 'POST',
@@ -127,13 +134,14 @@ $(document).ready(function() {
         setInterval(sendView, 5000);
 
         $('#message-input').emojioneArea({
-            pickerPosition: 'top',
-            tonesStyle: 'bullet',
-            autocomplete: false,
-            events: {
-                keyup: function(editor, event) {
-                    if (event.keyCode == 13 && !event.shiftKey) {
-                        sendMessage();
+        pickerPosition: 'top',
+        tonesStyle: 'bullet',
+        autocomplete: false,
+        events: {
+            keyup: function(editor, event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
                     }
                 }
             }
