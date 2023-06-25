@@ -39,6 +39,15 @@ function updateConnectedUsers() {
     });
 }
 
+function sendView() {
+    $.ajax({
+        url: '/send_view',
+        type: 'POST',
+        contentType: 'text/plain',
+        data: username
+    });
+} 
+
 function sendMessage() {
     var message = $('#message-input').val();
     $('#message-input').val('');
@@ -89,8 +98,10 @@ $(document).ready(function() {
 
         updateChatHistory();
         updateConnectedUsers();
+        sendView();
         setInterval(updateChatHistory, 5000);
         setInterval(updateConnectedUsers, 5000);
+        setInterval(sendView, 5000);
 
         $('#message-input').emojioneArea({
             pickerPosition: 'top',
