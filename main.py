@@ -30,7 +30,7 @@ def send_to_webhook(username, message, url):
         'x-api-key': apikey
     }
     payload = {
-        "Text": username + ': ' + message.replace('\n', ' ').replace("'", "\\'").replace('"', '\\"'),
+        "Text": username + ': ' + message.replace('\n', ' ').replace("'", "").replace('"', ''),
         "SourceName": "Website",
         "DomainName": domainname
     } 
