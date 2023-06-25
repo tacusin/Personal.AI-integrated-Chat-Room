@@ -10,16 +10,34 @@ function login() {
     }
 }
 
+// Function to scroll the chat window to the bottom
+function scrollChatWindowToBottom() {
+  const chatHistory = document.getElementById('chat-history');
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+// Function to check if the user is at the bottom of the chat window
+function isUserAtBottom() {
+  const chatHistory = document.getElementById('chat-history');
+  return chatHistory.scrollTop + chatHistory.clientHeight === chatHistory.scrollHeight;
+}
+
 function updateChatHistory() {
     $.ajax({
         url: '/get_chat_history',
         type: 'GET',
         success: function(data) {
-            $('#chat-history').empty();
+            const chatHistory = $('#chat-history');
+            const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
+
+            chatHistory.empty();
             data.forEach(function(message) {
-                $('#chat-history').append('<div class="message"><strong>' + message.sender + ':</strong> ' + message.message + '</div>');
+                chatHistory.append('<div class="message"><strong>' + message.sender + ':</strong> ' + message.message + '</div>');
             });
-            $('#scroll-window').scrollTop($('#chat-history').prop('scrollHeight'));
+
+            if (isUserAtBottom) {
+                chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
+            }
         }
     });
 }
