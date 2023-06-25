@@ -40,9 +40,9 @@ def send_to_webhook(username, message, url):
     if url == primary_webhook_url:
         if response.status_code == 200:
             chatbot_response = response.json().get('ai_message')
-            chat_history.append({'sender': 'Chatbot', 'message': chatbot_response})
+            chat_history.append({'sender': 'Chit', 'message': chatbot_response})
         else:
-            chat_history.append({'sender': 'Chatbot', 'message': 'Error: Failed to get response from webhook API.'})
+            chat_history.append({'sender': 'Chit', 'message': 'Error: Failed to get response from webhook API.'})
 
 @app.route('/')
 def index():
@@ -59,6 +59,8 @@ def get_chat_history():
 @app.route('/get_connected_users', methods=['GET'])
 def get_connected_users():
     cleanup_connected_users()
+    #add "Chit" to connected users
+    connected_users['Chit'] = time.time()
     return jsonify(list(connected_users.keys()))
 
 @app.route('/send_view', methods=['POST'])

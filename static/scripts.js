@@ -96,8 +96,8 @@ function sendMessage() {
     var emojioneArea = $("#message-input").data("emojioneArea");
     if (!message && emojioneArea.getText().trim() !== '') {
       message = emojioneArea.getText().trim();
-      emojioneArea.setText('');
     }
+    emojioneArea.setText('');
     if (!message) return;  // prevent empty messages
     $.ajax({
         url: '/send_message',
@@ -118,8 +118,8 @@ function promptChatbot() {
     var emojioneArea = $("#message-input").data("emojioneArea");
     if (!message && emojioneArea.getText().trim() !== '') {
       message = emojioneArea.getText().trim();
-      emojioneArea.setText('');
     }
+    emojioneArea.setText('');
     if (!message) return; // prevent empty messages
     $.ajax({
         url: '/prompt_chatbot',

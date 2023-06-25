@@ -43,11 +43,11 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 90vh;
-    height: 90dvh;
+    height: 100vh;
+    height: 100dvh;
     width: 100%;
     max-width: 800px;
-    margin: 2rem auto;
+    margin: 0rem auto;
     border-radius: 10px;
     overflow: hidden;
 }
