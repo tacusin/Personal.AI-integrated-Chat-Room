@@ -1,8 +1,9 @@
-let username = '';
+let username = localStorage.getItem('username');
 
 function login() {
     username = $('#username-input').val();
     if (username) {
+        localStorage.setItem('username', username);
         window.location.href = '/chat';
     } else {
         alert('Username cannot be empty.');

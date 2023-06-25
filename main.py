@@ -73,8 +73,11 @@ def prompt_chatbot():
     username = data.get('username')
     message = data.get('message')
   
-    if not username:
-        return 'Username is required.', 400
+    if not username or not message:
+        return 'Both username and message are required.', 400
+
+    chat_history.append({'sender': username, 'message': message})
+    connected_users[username] = time.time()
 
     primary_webhook_url = 'https://api.personal.ai/v1/message'  # Replace with your primary webhook URL
     response = requests.post(primary_webhook_url, json={
