@@ -1,13 +1,31 @@
 let username = localStorage.getItem('username');
 
 function login() {
-    username = $('#username-input').val();
-    if (username) {
-        localStorage.setItem('username', username);
-        window.location.href = '/chat';
-    } else {
+    var input_username = $('#username-input').val();
+    if (!input_username) {
         alert('Username cannot be empty.');
+        return;
     }
+
+    // Fetch connected users
+    $.ajax({
+        url: '/get_connected_users',
+        type: 'GET',
+        success: function(data) {
+            // Check if input_username is in the list of connected users
+            if (data.includes(input_username)) {
+                alert('Username is already in use.');
+            } else {
+                // If username is not in use, proceed with login
+                username = input_username;
+                localStorage.setItem('username', username);
+                window.location.href = '/chat';
+            }
+        },
+        error: function() {
+            alert('There was a problem checking the username. Please try again.');
+        }
+    });
 }
 
 // Function to scroll the chat window to the bottom
