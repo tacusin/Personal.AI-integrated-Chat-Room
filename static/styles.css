@@ -39,6 +39,11 @@ body {
     background-color: #505050;
 }
 
+#login-page h1 {
+  text-align: center;
+  align-self: center;
+}
+
 #chat-room {
     display: flex;
     flex-direction: column;
