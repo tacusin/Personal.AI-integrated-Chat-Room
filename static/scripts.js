@@ -66,9 +66,9 @@ function updateConnectedUsers() {
         type: 'GET',
         success: function(data) {
             $('#connected-users').empty();
-            $('#connected-users').append('<strong>Connected Users:</strong> ' + data.length);
+            $('#connected-users').append('<strong><span class="underline">Connected Users:</strong> ' + data.length + '</span> <--- Clickable');
             $('#user-list').empty();
-            $('#user-list').append('<div id="connected-users" onclick="toggleUserList()">Connected Users</div>');
+            $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</div>');
             data.forEach(function(user) {
                 $('#user-list').append('<p>• ' + user + '</p>');
             });

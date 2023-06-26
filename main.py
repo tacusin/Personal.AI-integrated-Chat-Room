@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import time
 import os
+import json
 
 domainname = os.environ['DOMAIN_NAME']
 apikey = os.environ['API_KEY']
@@ -29,11 +30,21 @@ def send_to_webhook(username, message, url):
         'Content-Type': 'application/json',
         'x-api-key': apikey
     }
+    
     payload = {
         "Text": username + ': ' + message.replace('\n', ' ').replace("'", "").replace('"', ''),
         "SourceName": "Website",
         "DomainName": domainname
     } 
+    if url == primary_webhook_url:
+        last_20_items = chat_history[-20:]
+        formatted_list = [f"{item['sender']}: {item['message']}" for item in last_20_items]
+        list_as_string = ', '.join(formatted_list)
+
+        # Replacing single and double quotes as well as new lines
+        list_as_string = list_as_string.replace("'", " ").replace('"', ' ').replace('\n', ' ')
+        payload["Context"] = list_as_string
+    
     response = requests.post(url, json=payload, headers=headers)
 
     # Special handling for the primary webhook URL

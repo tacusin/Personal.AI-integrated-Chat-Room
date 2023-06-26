@@ -117,7 +117,13 @@ button:hover {
 }
 
 #connected-users {
-    cursor: pointer;
-    text-decoration: underline;
+  cursor: pointer;
 }
- 
+
+#connected-users span {
+  text-decoration: none;
+}
+
+#connected-users .underline {
+  text-decoration: underline;
+}
