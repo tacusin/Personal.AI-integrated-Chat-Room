@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import time
 import os
-import json
 
 domainname = os.environ['DOMAIN_NAME']
 apikey = os.environ['API_KEY']
@@ -14,7 +13,7 @@ secondary_webhook_url = 'https://api.personal.ai/v1/memory'  # Replace with your
 app = Flask(__name__)
 
 # Store chat history and connected users
-chat_history = []
+chat_history = [{'sender': 'Chit', 'message': 'Hello! Welcome to my chat room!'}]
 connected_users = {}
 
 # Function to clean up connected users (remove users who haven't sent a message for a while)
@@ -37,12 +36,13 @@ def send_to_webhook(username, message, url):
         "DomainName": domainname
     } 
     if url == primary_webhook_url:
-        last_20_items = chat_history[-20:]
-        formatted_list = [f"{item['sender']}: {item['message']}" for item in last_20_items]
+        last_40_items = chat_history[-40:]
+        formatted_list = [item['message'] for item in last_40_items if item['sender'] != 'Chit']
         list_as_string = ', '.join(formatted_list)
 
         # Replacing single and double quotes as well as new lines
         list_as_string = list_as_string.replace("'", " ").replace('"', ' ').replace('\n', ' ')
+        print(list_as_string)
         payload["Context"] = list_as_string
     
     response = requests.post(url, json=payload, headers=headers)
