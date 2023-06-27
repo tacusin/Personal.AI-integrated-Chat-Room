@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
 import requests
 import time
 import os
@@ -11,6 +12,7 @@ primary_webhook_url = 'https://api.personal.ai/v1/message'  # Replace with your 
 secondary_webhook_url = 'https://api.personal.ai/v1/memory'  # Replace with your secondary webhook URL
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Store chat history and connected users
 chat_history = [{'sender': 'Chit', 'message': 'Hello! Welcome to my chat room!'}]
@@ -51,8 +53,10 @@ def send_to_webhook(username, message, url):
         if response.status_code == 200:
             chatbot_response = response.json().get('ai_message')
             chat_history.append({'sender': 'Chit', 'message': chatbot_response})
+            socketio.emit('update_chat_history', chat_history, broadcast=True)
         else:
             chat_history.append({'sender': 'Chit', 'message': 'Error: Failed to get response from webhook API.'})
+            socketio.emit('update_chat_history', chat_history, broadcast=True)
 
 @app.route('/')
 def index():
@@ -62,52 +66,48 @@ def index():
 def chat():
     return render_template('chat.html')
 
-@app.route('/get_chat_history', methods=['GET'])
-def get_chat_history():
-    return jsonify(chat_history)
-
-@app.route('/get_connected_users', methods=['GET'])
-def get_connected_users():
-    cleanup_connected_users()
-    #add "Chit" to connected users
-    connected_users['Chit'] = time.time()
-    return jsonify(list(connected_users.keys()))
-
-@app.route('/send_view', methods=['POST'])
-def send_view():
-    username = request.get_data(as_text=True)
+@socketio.on('send_view')
+def handle_send_view(username):
     connected_users[username] = time.time()
-    return 'OK'
 
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    data = request.get_json()
+@socketio.on('send_message')
+def handle_send_message(data):
     username = data.get('username')
     message = data.get('message')
-  
+
     if not username or not message:
-        return 'Both username and message are required.', 400
+        return
 
     chat_history.append({'sender': username, 'message': message})
     send_to_webhook(username, message, secondary_webhook_url)
 
-    return '', 204
+    socketio.emit('update_chat_history', chat_history, broadcast=True)
 
-@app.route('/prompt_chatbot', methods=['POST'])
-def prompt_chatbot():
-    data = request.get_json()
+@socketio.on('prompt_chatbot')
+def handle_prompt_chatbot(data):
     username = data.get('username')
     message = data.get('message')
-  
+
     if not username or not message:
-        return 'Both username and message are required.', 400
+        return
 
     chat_history.append({'sender': username, 'message': message})
 
     send_to_webhook(username, message, primary_webhook_url)
     send_to_webhook(username, message, secondary_webhook_url)
 
-    return '', 204
+    socketio.emit('update_chat_history', chat_history, broadcast=True)
+
+@socketio.on('get_chat_history')
+def handle_get_chat_history():
+    emit('update_chat_history', chat_history)
+
+@socketio.on('get_connected_users')
+def handle_get_connected_users():
+    cleanup_connected_users()
+    #add "Chit" to connected users
+    connected_users['Chit'] = time.time()
+    emit('update_connected_users', list(connected_users.keys()))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000)
