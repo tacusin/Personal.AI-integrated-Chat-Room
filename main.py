@@ -18,13 +18,6 @@ socketio = SocketIO(app)
 chat_history = [{'sender': 'Chit', 'message': 'Hello! Welcome to my chat room!'}]
 connected_users = {}
 
-# Function to clean up connected users (remove users who haven't sent a message for a while)
-def cleanup_connected_users():
-    cutoff_time = time.time() - 10  # Adjust the inactivity duration as needed
-    for username, last_message_time in list(connected_users.items()):
-        if last_message_time < cutoff_time:
-            del connected_users[username]
-
 # Function to send to webhook
 def send_to_webhook(username, message, url):
     headers = {
@@ -52,11 +45,13 @@ def send_to_webhook(username, message, url):
     if url == primary_webhook_url:
         if response.status_code == 200:
             chatbot_response = response.json().get('ai_message')
-            chat_history.append({'sender': 'Chit', 'message': chatbot_response})
-            socketio.emit('update_chat_history', chat_history, broadcast=True)
+            new_message = {'sender': 'Chit', 'message': chatbot_response}
+            chat_history.append(new_message)
+            socketio.emit('new_message', new_message, broadcast=True)
         else:
-            chat_history.append({'sender': 'Chit', 'message': 'Error: Failed to get response from webhook API.'})
-            socketio.emit('update_chat_history', chat_history, broadcast=True)
+            new_message = {'sender': 'Chit', 'message': 'Error: Failed to get response from webhook API.'}
+            chat_history.append(new_message)
+            socketio.emit('new_message', new_message, broadcast=True)
 
 @app.route('/')
 def index():
@@ -65,10 +60,6 @@ def index():
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
-
-@socketio.on('send_view')
-def handle_send_view(username):
-    connected_users[username] = time.time()
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -82,11 +73,12 @@ def handle_send_message(data):
 
     if not username or not message:
         return
+      
+    new_message = {'sender': username, 'message': message}
+    chat_history.append(new_message)
+    socketio.emit('new_message', new_message, broadcast=True)
 
-    chat_history.append({'sender': username, 'message': message})
     send_to_webhook(username, message, secondary_webhook_url)
-
-    socketio.emit('update_chat_history', chat_history, broadcast=True)
 
 @socketio.on('login')
 def handle_login(username):
@@ -109,12 +101,13 @@ def handle_prompt_chatbot(data):
     if not username or not message:
         return
 
-    chat_history.append({'sender': username, 'message': message})
-
     send_to_webhook(username, message, primary_webhook_url)
     send_to_webhook(username, message, secondary_webhook_url)
 
-    socketio.emit('update_chat_history', chat_history, broadcast=True)
+    new_message = {'sender': username, 'message': message}
+    chat_history.append(new_message)
+    socketio.emit('new_message', new_message, broadcast=True)
+
 
 @socketio.on('get_chat_history')
 def handle_get_chat_history():
@@ -122,7 +115,6 @@ def handle_get_chat_history():
 
 @socketio.on('get_connected_users')
 def handle_get_connected_users():
-    cleanup_connected_users()
     #add "Chit" to connected users
     connected_users['Chit'] = time.time()
     emit('update_connected_users', list(connected_users.keys()))

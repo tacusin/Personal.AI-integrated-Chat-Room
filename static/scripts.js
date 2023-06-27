@@ -85,6 +85,17 @@ function promptChatbot() {
     });
 }
 
+socket.on('new_message', (data) => {
+    const chatHistory = $('#chat-history');
+    const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
+
+    chatHistory.append('<div class="message"><strong>' + data.sender + ':</strong> ' + data.message + '</div>');
+
+    if (isUserAtBottom) {
+        chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
+    }
+});
+
 function toggleUserList() {
     $('#user-list').toggleClass('show');
 }
@@ -98,12 +109,6 @@ $(document).ready(function() {
 
         socket.emit('get_chat_history');
         socket.emit('get_connected_users');
-
-        setInterval(() => {
-            socket.emit('get_chat_history');
-            socket.emit('get_connected_users');
-            socket.emit('send_view', username);
-        }, 5000);
 
         $('#message-input').emojioneArea({
         pickerPosition: 'top',
