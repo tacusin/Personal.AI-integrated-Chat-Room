@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 import requests
 import time
@@ -70,6 +70,11 @@ def chat():
 def handle_send_view(username):
     connected_users[username] = time.time()
 
+@socketio.on('disconnect')
+def handle_disconnect():
+    if request.sid in connected_users:
+        del connected_users[request.sid]
+
 @socketio.on('send_message')
 def handle_send_message(data):
     username = data.get('username')
@@ -82,6 +87,19 @@ def handle_send_message(data):
     send_to_webhook(username, message, secondary_webhook_url)
 
     socketio.emit('update_chat_history', chat_history, broadcast=True)
+
+@socketio.on('login')
+def handle_login(username):
+    if username in connected_users.values() or username.lower() == 'chit':
+        emit('login_response', {'success': False})
+    else:
+        connected_users[request.sid] = username
+        emit('login_response', {'success': True, 'username': username})
+
+@socketio.on('logout')
+def handle_logout(username):
+    if username in connected_users:
+        del connected_users[username]
 
 @socketio.on('prompt_chatbot')
 def handle_prompt_chatbot(data):

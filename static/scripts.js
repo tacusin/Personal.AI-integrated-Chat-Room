@@ -29,6 +29,16 @@ socket.on('update_connected_users', (data) => {
     });
 });
 
+socket.on('login_response', (data) => {
+    if (data.success) {
+        username = data.username;
+        localStorage.setItem('username', username);
+        window.location.href = '/chat';
+    } else {
+        alert('Username is already in use.');
+    }
+});
+
 function login() {
     var input_username = $('#username-input').val();
     if (!input_username) {
@@ -36,12 +46,11 @@ function login() {
         return;
     }
 
-    username = input_username;
-    localStorage.setItem('username', username);
-    window.location.href = '/chat';
+    socket.emit('login', input_username);
 }
 
 function logout() {
+    socket.emit('logout', username);
     localStorage.removeItem('username');
     window.location.href = '/';
 }
