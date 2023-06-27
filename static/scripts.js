@@ -9,7 +9,6 @@ socket.on('update_chat_history', (data) => {
     const chatHistory = $('#chat-history');
     const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
 
-    chatHistory.empty();
     data.forEach(function(message) {
         chatHistory.append('<div class="message"><strong>' + message.sender + ':</strong> ' + message.message + '</div>');
     });

@@ -47,11 +47,11 @@ def send_to_webhook(username, message, url):
             chatbot_response = response.json().get('ai_message')
             new_message = {'sender': 'Chit', 'message': chatbot_response}
             chat_history.append(new_message)
-            socketio.emit('new_message', new_message, broadcast=True)
+            socketio.emit('new_message', new_message)
         else:
             new_message = {'sender': 'Chit', 'message': 'Error: Failed to get response from webhook API.'}
             chat_history.append(new_message)
-            socketio.emit('new_message', new_message, broadcast=True)
+            socketio.emit('new_message', new_message)
 
 @app.route('/')
 def index():
@@ -76,9 +76,10 @@ def handle_send_message(data):
       
     new_message = {'sender': username, 'message': message}
     chat_history.append(new_message)
-    socketio.emit('new_message', new_message, broadcast=True)
+    socketio.emit('new_message', new_message)
 
     send_to_webhook(username, message, secondary_webhook_url)
+
 
 @socketio.on('login')
 def handle_login(username):
@@ -87,11 +88,16 @@ def handle_login(username):
     else:
         connected_users[request.sid] = username
         emit('login_response', {'success': True, 'username': username})
+        emit('update_connected_users', list(connected_users.values()))
 
 @socketio.on('logout')
 def handle_logout(username):
-    if username in connected_users:
-        del connected_users[username]
+    for sid, user in list(connected_users.items()):
+        if user == username:
+            del connected_users[sid]
+            break
+    emit('update_connected_users', list(connected_users.values()))
+
 
 @socketio.on('prompt_chatbot')
 def handle_prompt_chatbot(data):
@@ -101,12 +107,12 @@ def handle_prompt_chatbot(data):
     if not username or not message:
         return
 
-    send_to_webhook(username, message, primary_webhook_url)
-    send_to_webhook(username, message, secondary_webhook_url)
-
     new_message = {'sender': username, 'message': message}
     chat_history.append(new_message)
-    socketio.emit('new_message', new_message, broadcast=True)
+    socketio.emit('new_message', new_message) 
+  
+    send_to_webhook(username, message, primary_webhook_url)
+    send_to_webhook(username, message, secondary_webhook_url)
 
 
 @socketio.on('get_chat_history')
