@@ -103,7 +103,7 @@ body.login-page {
     right: 0;
     top: 0;
     width: 200px;
-    height: 100%;
+    height: 100% !important;
     overflow-y: auto;
     z-index: 9999;
 }

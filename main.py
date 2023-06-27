@@ -42,7 +42,6 @@ def send_to_webhook(username, message, url):
 
         # Replacing single and double quotes as well as new lines
         list_as_string = list_as_string.replace("'", " ").replace('"', ' ').replace('\n', ' ')
-        print(list_as_string)
         payload["Context"] = list_as_string
     
     response = requests.post(url, json=payload, headers=headers)
