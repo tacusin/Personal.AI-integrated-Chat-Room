@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
 import requests
-import time
 import os
+import time
 
 domainname = os.environ['DOMAIN_NAME']
 apikey = os.environ['API_KEY']
@@ -17,6 +17,23 @@ socketio = SocketIO(app)
 # Store chat history and connected users
 chat_history = [{'sender': 'Chit', 'message': 'Hello! Welcome to my chat room!'}]
 connected_users = {}
+view_history = {}
+
+def keys_by_value(dictionary, value):
+    return [key for key, val in dictionary.items() if val == value]
+
+# Function to clean up connected users (remove users who haven't sent a message for a while)
+def cleanup_connected_users():
+    cutoff_time = time.time() - 6  # Adjust the inactivity duration as needed
+    for username, viewtime in list(view_history.items()):
+        if viewtime < cutoff_time:
+            result = keys_by_value(connected_users, username)
+            if (result): 
+              del connected_users[result[0]]
+            if (username): 
+              del view_history[username]
+            socketio.emit('update_connected_users', list(connected_users.values())) 
+
 
 # Function to send to webhook
 def send_to_webhook(username, message, url):
@@ -61,10 +78,25 @@ def index():
 def chat():
     return render_template('chat.html')
 
+@socketio.on('send_view')
+def handle_send_view(username):
+    if (username): 
+      view_history[username] = time.time()
+    cleanup_connected_users()
+
 @socketio.on('disconnect')
 def handle_disconnect():
     if request.sid in connected_users:
         del connected_users[request.sid]
+
+@socketio.on('rejoin')
+def handle_rejoin(username):
+    if username in connected_users.values() or username.lower() == 'chit':
+        emit('login_response', {'success': False})
+    else:
+        connected_users[request.sid] = username
+        emit('login_response', {'success': True, 'username': username})
+        socketio.emit('update_connected_users', list(connected_users.values())) 
 
 @socketio.on('send_message')
 def handle_send_message(data):
@@ -121,9 +153,9 @@ def handle_get_chat_history():
 
 @socketio.on('get_connected_users')
 def handle_get_connected_users():
-    #add "Chit" to connected users
-    connected_users['Chit'] = time.time()
-    emit('update_connected_users', list(connected_users.keys()))
+  if hasattr(connected_users, 'username'):
+    emit('update_connected_users', list(connected_users.username()))
+
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)

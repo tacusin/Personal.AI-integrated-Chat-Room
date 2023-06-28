@@ -1,9 +1,6 @@
 let username = localStorage.getItem('username');
 const socket = io();
 
-socket.on('connect', () => {
-    socket.emit('send_view', username);
-});
 
 socket.on('update_chat_history', (data) => {
     const chatHistory = $('#chat-history');
@@ -20,11 +17,12 @@ socket.on('update_chat_history', (data) => {
 
 socket.on('update_connected_users', (data) => {
     $('#connected-users').empty();
-    $('#connected-users').append('<strong><span class="underline">Connected Users:</strong> ' + data.length + '</span> <--- Clickable');
+    $('#connected-users').append('<strong><span class="underline">Connected Users:</strong> ' + (data.length + 1) + '</span> <--- Clickable');
     $('#user-list').empty();
     $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</div>');
+    $('#user-list').append('<p>- Chit</p>');
     data.forEach(function(user) {
-        $('#user-list').append('<p>\u2022 ' + user + '</p>');
+        $('#user-list').append('<p>- ' + user + '</p>');
     });
 });
 
@@ -32,8 +30,12 @@ socket.on('login_response', (data) => {
     if (data.success) {
         username = data.username;
         localStorage.setItem('username', username);
-        window.location.href = '/chat';
+        if (window.location.pathname === '/') {
+           window.location.href = '/chat';
+        }
     } else {
+        window.location.href = '/';
+        localStorage.clear();
         alert('Username is already in use.');
     }
 });
@@ -91,6 +93,7 @@ socket.on('new_message', (data) => {
     chatHistory.append('<div class="message"><strong>' + data.sender + ':</strong> ' + data.message + '</div>');
 
     if (isUserAtBottom) {
+        //document.querySelector('#chat-history').lastChild.scrollIntoView()
         chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
     }
 });
@@ -105,10 +108,18 @@ $(document).ready(function() {
             window.location.href = '/';
             return;
         }
+        else {
+            socket.emit('send_view', username);
+            socket.emit('rejoin', username)
+        } 
 
         socket.emit('get_chat_history');
         socket.emit('get_connected_users');
 
+        setInterval(() => {
+            socket.emit('send_view', username);
+        }, 5000);
+      
         $('#message-input').emojioneArea({
         pickerPosition: 'top',
         tonesStyle: 'bullet',
@@ -118,6 +129,7 @@ $(document).ready(function() {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     sendMessage();
+                    return false;
                     }
                 }
             }
