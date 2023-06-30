@@ -110,7 +110,10 @@ $(document).ready(function() {
         }
         else {
             socket.emit('send_view', username);
-            socket.emit('rejoin', username)
+            if (!navigator.userAgent.includes("Firefox")) {
+              socket.emit('rejoin', username);
+            }
+            //socket.emit('rejoin', username);
         } 
 
         socket.emit('get_chat_history');
@@ -131,8 +134,27 @@ $(document).ready(function() {
                     sendMessage();
                     return false;
                     }
+                if (event.key === 'Enter' && event.shiftKey) {
+                    event.preventDefault();
+                    promptChatbot();
+                    return false;
+                    }
                 }
             }
         });
+    }
+    else {
+      socket.emit('send_view', username);
+      // Get the input element
+      var input = document.getElementById("username-input");
+
+      // Add event listener for the 'keyup' event
+      input.addEventListener("keyup", function(event) {
+        // Check if the 'Enter' key was pressed (keyCode 13)
+      if (event.keyCode === 13) {
+        // Call your function here
+        login();
+        }
+      });
     }
 });
