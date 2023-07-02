@@ -18,12 +18,20 @@ socketio = SocketIO(app)
 chat_history = [{'sender': 'Chit', 'message': 'Hello! Welcome to my chat room!'}]
 connected_users = {}
 view_history = {}
+user_typing = {}
 
 def keys_by_value(dictionary, value):
     return [key for key, val in dictionary.items() if val == value]
 
 def cleanup_connected_users():
     cutoff_time = time.time() - 6
+    typing_cutoff = time.time() - 2
+
+    #clear users in user_typing who haven't spoken for 6 seconds
+    for user in user_typing.keys():
+        if user_typing[user] < typing_cutoff:
+            user_typing.pop(user)
+
     for username, viewtime in list(view_history.items()):
         if viewtime < cutoff_time:
             result = keys_by_value(connected_users, username)
@@ -31,7 +39,7 @@ def cleanup_connected_users():
               del connected_users[result[0]]
             if (username): 
               del view_history[username]
-            socketio.emit('update_connected_users', list(connected_users.values())) 
+    socketio.emit('update_connected_users', (list(connected_users.values()), list(user_typing.keys()))) 
 
 def send_to_webhook(username, message, url):
     headers = {
@@ -86,6 +94,12 @@ def handle_send_view(username):
       view_history[username] = time.time()
     cleanup_connected_users()
 
+@socketio.on('typing')
+def handle_typing(username):
+    if (username):
+        user_typing[username] = time.time()
+        cleanup_connected_users()
+
 @socketio.on('disconnect')
 def handle_disconnect():
     session_id = session.get('id')
@@ -99,10 +113,12 @@ def handle_send_message(data):
 
     if not username or not message:
         return
-      
+
+    user_typing.pop(username)
     new_message = {'sender': username, 'message': message}
     chat_history.append(new_message)
     socketio.emit('new_message', new_message)
+    cleanup_connected_users()
 
     send_to_webhook(username, message, secondary_webhook_url)
 
@@ -133,9 +149,12 @@ def handle_prompt_chatbot(data):
     if not username or not message:
         return
 
+    user_typing.pop(username)
     new_message = {'sender': username, 'message': message}
     chat_history.append(new_message)
     socketio.emit('new_message', new_message) 
+    cleanup_connected_users()
+
 
     send_to_webhook(username, message, primary_webhook_url)
     send_to_webhook(username, message, secondary_webhook_url)

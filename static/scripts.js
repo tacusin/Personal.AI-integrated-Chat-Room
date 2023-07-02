@@ -15,16 +15,22 @@ socket.on('update_chat_history', (data) => {
     }
 });
 
-socket.on('update_connected_users', (data) => {
-    $('#connected-users').empty();
-    $('#connected-users').append('<strong><span class="underline">Connected Users:</strong> ' + (data.length + 1) + '</span> <--- Clickable');
-    $('#user-list').empty();
-    $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</div>');
-    $('#user-list').append('<p>- Chit</p>');
-    data.forEach(function(user) {
-        $('#user-list').append('<p>- ' + user + '</p>');
-    });
+socket.on('update_connected_users', (data = [], typing = []) => {
+  $('#connected-users').empty();
+  $('#connected-users').append('<strong><span class="underline">Connected Users:</span></strong> ' + (data.length + 1) + ' <--- Clickable');
+  $('#user-list').empty();
+  $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</span></div>');
+  $('#user-list').append('<p>- Chit</p>');
+  console.log(data);
+  data.forEach(function(user) {
+    let userWithTyping = user;
+    if (typing.includes(user)) {
+      userWithTyping += ' is typing';
+    }
+    $('#user-list').append('<p>- ' + userWithTyping + '</p>');
+  });
 });
+
 
 socket.on('login_response', (data) => {
     if (data.success) {
@@ -110,9 +116,9 @@ $(document).ready(function() {
         }
         else {
             socket.emit('send_view', username);
-            if (!navigator.userAgent.includes("Firefox")) {
+            /*if (!navigator.userAgent.includes("Firefox")) {
               socket.emit('rejoin', username);
-            }
+            }*/
             //socket.emit('rejoin', username);
         } 
 
@@ -139,6 +145,7 @@ $(document).ready(function() {
                     promptChatbot();
                     return false;
                     }
+                socket.emit('typing', username);
                 }
             }
         });
@@ -152,7 +159,6 @@ $(document).ready(function() {
       input.addEventListener("keyup", function(event) {
         // Check if the 'Enter' key was pressed (keyCode 13)
       if (event.keyCode === 13) {
-        // Call your function here
         login();
         }
       });
