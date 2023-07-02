@@ -1,4 +1,50 @@
 let username = localStorage.getItem('username');
+const socket = io();
+
+
+socket.on('update_chat_history', (data) => {
+    const chatHistory = $('#chat-history');
+    const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
+
+    data.forEach(function(message) {
+        chatHistory.append('<div class="message"><strong>' + message.sender + ':</strong> ' + message.message + '</div>');
+    });
+
+    if (isUserAtBottom) {
+        chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
+    }
+});
+
+socket.on('update_connected_users', (data = [], typing = []) => {
+  $('#connected-users').empty();
+  $('#connected-users').append('<strong><span class="underline">Connected Users:</span></strong> ' + (data.length + 1) + ' <--- Clickable');
+  $('#user-list').empty();
+  $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</span></div>');
+  $('#user-list').append('<p>- Chit</p>');
+  console.log(data);
+  data.forEach(function(user) {
+    let userWithTyping = user;
+    if (typing.includes(user)) {
+      userWithTyping += ' is typing';
+    }
+    $('#user-list').append('<p>- ' + userWithTyping + '</p>');
+  });
+});
+
+
+socket.on('login_response', (data) => {
+    if (data.success) {
+        username = data.username;
+        localStorage.setItem('username', username);
+        if (window.location.pathname === '/') {
+           window.location.href = '/chat';
+        }
+    } else {
+        window.location.href = '/';
+        localStorage.clear();
+        alert('Username is already in use.');
+    }
+});
 
 function login() {
     var input_username = $('#username-input').val();
@@ -7,87 +53,13 @@ function login() {
         return;
     }
 
-    // Fetch connected users
-    $.ajax({
-        url: '/get_connected_users',
-        type: 'GET',
-        success: function(data) {
-            // Check if input_username is in the list of connected users
-            if (data.includes(input_username)) {
-                alert('Username is already in use.');
-            } else {
-                // If username is not in use, proceed with login
-                username = input_username;
-                localStorage.setItem('username', username);
-                window.location.href = '/chat';
-            }
-        },
-        error: function() {
-            alert('There was a problem checking the username. Please try again.');
-        }
-    });
+    socket.emit('login', input_username);
 }
-
-// Function to scroll the chat window to the bottom
-function scrollChatWindowToBottom() {
-  const chatHistory = document.getElementById('chat-history');
-  chatHistory.scrollTop = chatHistory.scrollHeight;
-}
-
-// Function to check if the user is at the bottom of the chat window
-function isUserAtBottom() {
-  const chatHistory = document.getElementById('chat-history');
-  return chatHistory.scrollTop + chatHistory.clientHeight === chatHistory.scrollHeight;
-}
-
-function updateChatHistory() {
-    $.ajax({
-        url: '/get_chat_history',
-        type: 'GET',
-        success: function(data) {
-            const chatHistory = $('#chat-history');
-            const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
-
-            chatHistory.empty();
-            data.forEach(function(message) {
-                chatHistory.append('<div class="message"><strong>' + message.sender + ':</strong> ' + message.message + '</div>');
-            });
-
-            if (isUserAtBottom) {
-                chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
-            }
-        }
-    });
-}
-
-function updateConnectedUsers() {
-    $.ajax({
-        url: '/get_connected_users',
-        type: 'GET',
-        success: function(data) {
-            $('#connected-users').empty();
-            $('#connected-users').append('<strong><span class="underline">Connected Users:</strong> ' + data.length + '</span> <--- Clickable');
-            $('#user-list').empty();
-            $('#user-list').append('<div id="connected-users" onclick="toggleUserList()"><span class="underline">Connected Users</div>');
-            data.forEach(function(user) {
-                $('#user-list').append('<p>• ' + user + '</p>');
-            });
-        }
-    });
-}
-
-function sendView() {
-    $.ajax({
-        url: '/send_view',
-        type: 'POST',
-        contentType: 'text/plain',
-        data: username
-    });
-} 
 
 function logout() {
-  localStorage.removeItem('username');
-  window.location.href = '/';
+    socket.emit('logout', username);
+    localStorage.removeItem('username');
+    window.location.href = '/';
 }
 
 function sendMessage() {
@@ -99,16 +71,9 @@ function sendMessage() {
     }
     emojioneArea.setText('');
     if (!message) return;  // prevent empty messages
-    $.ajax({
-        url: '/send_message',
-        type: 'POST',
-        data: JSON.stringify({
-            'username': username,
-            'message': message
-        }),
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json',
-        async: false
+    socket.emit('send_message', {
+        'username': username,
+        'message': message
     });
 }
 
@@ -121,17 +86,23 @@ function promptChatbot() {
     }
     emojioneArea.setText('');
     if (!message) return; // prevent empty messages
-    $.ajax({
-        url: '/prompt_chatbot',
-        type: 'POST',
-        data: JSON.stringify({
-            'username': username,
-            'message': message
-        }),
-        contentType: 'application/json; charset=utf-8',
-        dataType: 'json'
+    socket.emit('prompt_chatbot', {
+        'username': username,
+        'message': message
     });
 }
+
+socket.on('new_message', (data) => {
+    const chatHistory = $('#chat-history');
+    const isUserAtBottom = chatHistory.scrollTop() + chatHistory.innerHeight() >= chatHistory[0].scrollHeight;
+
+    chatHistory.append('<div class="message"><strong>' + data.sender + ':</strong> ' + data.message + '</div>');
+
+    if (isUserAtBottom) {
+        //document.querySelector('#chat-history').lastChild.scrollIntoView()
+        chatHistory.scrollTop(chatHistory.prop('scrollHeight'));
+    }
+});
 
 function toggleUserList() {
     $('#user-list').toggleClass('show');
@@ -143,14 +114,21 @@ $(document).ready(function() {
             window.location.href = '/';
             return;
         }
+        else {
+            socket.emit('send_view', username);
+            /*if (!navigator.userAgent.includes("Firefox")) {
+              socket.emit('rejoin', username);
+            }*/
+            //socket.emit('rejoin', username);
+        } 
 
-        updateChatHistory();
-        updateConnectedUsers();
-        sendView();
-        setInterval(updateChatHistory, 5000);
-        setInterval(updateConnectedUsers, 5000);
-        setInterval(sendView, 5000);
+        socket.emit('get_chat_history');
+        socket.emit('get_connected_users');
 
+        setInterval(() => {
+            socket.emit('send_view', username);
+        }, 5000);
+      
         $('#message-input').emojioneArea({
         pickerPosition: 'top',
         tonesStyle: 'bullet',
@@ -160,9 +138,29 @@ $(document).ready(function() {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     sendMessage();
+                    return false;
                     }
+                if (event.key === 'Enter' && event.shiftKey) {
+                    event.preventDefault();
+                    promptChatbot();
+                    return false;
+                    }
+                socket.emit('typing', username);
                 }
             }
         });
+    }
+    else {
+      socket.emit('send_view', username);
+      // Get the input element
+      var input = document.getElementById("username-input");
+
+      // Add event listener for the 'keyup' event
+      input.addEventListener("keyup", function(event) {
+        // Check if the 'Enter' key was pressed (keyCode 13)
+      if (event.keyCode === 13) {
+        login();
+        }
+      });
     }
 });
